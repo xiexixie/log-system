@@ -2,6 +2,8 @@
 
 #include <string>
 #include <fstream>
+#include <memory>
+#include <iostream>
 
 namespace xie
 {
@@ -28,7 +30,6 @@ namespace xie
       void log(Level level, const char *file, int line, const char *format, ...);
       static logger *instance();
       void open(const std::string &filename);
-      void close();
       void level(Level level)
       {
         m_level = level;
@@ -40,14 +41,23 @@ namespace xie
 
     private:
       std::string m_filename;
-      std::ofstream m_fout;
+      static std::ofstream m_fout;
       Level m_level;
       int m_max;
       int m_len;
       static const char *s_level[LEVEL_COUNT];
-      static logger *m_instance;
+      static std::unique_ptr<logger> m_instance; // 单例模式无法调用析构函数，使用智能指针
       logger();
-      ~logger();
+      class Close
+      {
+      public:
+        ~Close()
+        {
+          m_fout.close();
+          std::cout << "close";
+        }
+      };
+      static Close close; // 静态成员最终结束会自动析构
       void rotate();
     };
   }

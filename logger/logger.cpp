@@ -12,18 +12,19 @@ const char *logger::s_level[LEVEL_COUNT] = {
     "WARN",
     "ERROR",
     "FATAL"};
-logger *logger::m_instance = nullptr;
+std::unique_ptr<logger> logger::m_instance = nullptr;
+std::ofstream logger::m_fout;
+logger::Close logger::close;
 logger *logger::instance()
 {
   if (m_instance == nullptr)
-    m_instance = new logger();
-  return m_instance;
+    m_instance.reset(new logger);
+  return m_instance.get();
 }
 
-logger::logger() : m_max(0), m_len(0), m_level(DEBUG) {}
-logger::~logger()
+logger::logger() : m_max(0), m_len(0), m_level(DEBUG)
 {
-  close();
+  // std::cout << "creat" << std::endl;
 }
 
 void logger::open(const std::string &filename)
@@ -36,10 +37,6 @@ void logger::open(const std::string &filename)
   }
   m_fout.seekp(0, std::ios::end);
   m_len = m_fout.tellp();
-}
-void logger::close()
-{
-  m_fout.close();
 }
 
 void logger::log(Level level, const char *file, int line, const char *format, ...)
@@ -96,7 +93,7 @@ void logger::log(Level level, const char *file, int line, const char *format, ..
 
 void logger::rotate()
 {
-  close();
+  m_fout.close();
   // 得到当前时间戳
   time_t t = time(nullptr);
   struct tm *ptn = localtime(&t);
